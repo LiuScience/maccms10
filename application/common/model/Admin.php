@@ -117,8 +117,6 @@ class Admin extends Base {
                 return ['code'=>1002,'msg'=>'验证码错误'];
             }
         }
-
-
         $where=[];
         $where['admin_name'] = ['eq',$data['admin_name']];
         $where['admin_pwd'] = ['eq',md5($data['admin_pwd'])];
@@ -148,7 +146,7 @@ class Admin extends Base {
 
         cookie('admin_id',$row['admin_id']);
         cookie('admin_name',$row['admin_name']);
-        cookie('admin_check',md5($random . $row['admin_name'] .$row['admin_id']) );
+        cookie('admin_check',md5($random .'-'. $row['admin_name'] .'-'.$row['admin_id'] .'-'.request()->ip() ) );
 
         return ['code'=>1,'msg'=>'登录成功'];
     }
@@ -168,14 +166,18 @@ class Admin extends Base {
         $admin_name = cookie('admin_name');
         $admin_check = cookie('admin_check');
 
+        $admin_id = htmlspecialchars(urldecode(trim($admin_id)));
+        $admin_name = htmlspecialchars(urldecode(trim($admin_name)));
+        $admin_check = htmlspecialchars(urldecode(trim($admin_check)));
+
         if(empty($admin_id) || empty($admin_name) || empty($admin_check)){
             return ['code'=>1001, 'msg'=>'未登录'];
         }
 
         $where = [];
-        $where['admin_id'] = $admin_id;
-        $where['admin_name'] = $admin_name;
-        $where['admin_status'] =1 ;
+        $where['admin_id'] = ['eq',$admin_id];
+        $where['admin_name'] = ['eq',$admin_name];
+        $where['admin_status'] = ['eq',1] ;
 
         $info = $this->where($where)->find();
         if(empty($info)){
@@ -183,8 +185,8 @@ class Admin extends Base {
         }
         $info = $info->toArray();
 
-        $login_check = md5($info['admin_random'] . $info['admin_name'] .$info['admin_id']) ;
-        if($login_check != $admin_check){
+        $login_check = md5($info['admin_random'] .'-'. $info['admin_name'] .'-'.$info['admin_id'] .'-'.request()->ip() ) ;
+        if($login_check !== $admin_check){
             return ['code'=>1003,'msg'=>'未登录'];
         }
         return ['code'=>1,'msg'=>'已登录','info'=>$info];
