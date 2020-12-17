@@ -3,17 +3,15 @@
 
     <div class="layui-tab layui-tab-brief" lay-filter="tabs">
         <ul class="layui-tab-title">
-            <li class="btn-local" ><a href="{:url('index')}">本地应用</a></li>
-            <li class="layui-this"><a href="{:url('add')}">离线安装</a></li>
+            <li class="btn-local" ><a href="{:url('index')}">{:lang('local_app')}</a></li>
+            <li class="layui-this"><a href="{:url('add')}">{:lang('local_setup')}</a></li>
         </ul>
         <div class="layui-tab-content">
             <blockquote class="layui-elem-quote layui-quote-nm">
-                提示：<br>
-                1.请确保第三方插件符合程序开发规范。
-                2.--使用前请做好安全检测避免出现安全问题。
+                {:lang('admin/addon/add_tip')}
             </blockquote>
             <input type="hidden" id="token" name="__token__" value="{$Request.token}" />
-            <button type="button" class="layui-btn layui-upload" id="upload1">点击上传</button>
+            <button type="button" class="layui-btn layui-upload" id="upload1">{:lang('upload')}</button>
         </div>
     </div>
 </div>
@@ -36,7 +34,7 @@
             ,method: 'post'
             ,exts:'zip'
             ,before: function(input) {
-                layer.msg('文件上传中...', {time:3000000});
+                layer.msg("{:lang('upload_ing')}", {time:3000000});
             },done: function(res, index, upload) {
                 var obj = this.item;
                 if (res.code == 0) {

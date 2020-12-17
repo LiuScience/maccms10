@@ -23,21 +23,21 @@ class Collect extends Base {
     {
         $total = $this->where($where)->count();
         $list = Db::name('Collect')->where($where)->order($order)->page($page)->limit($limit)->select();
-        return ['code'=>1,'msg'=>'数据列表','page'=>$page,'pagecount'=>ceil($total/$limit),'limit'=>$limit,'total'=>$total,'list'=>$list];
+        return ['code'=>1,'msg'=>lang('data_list'),'page'=>$page,'pagecount'=>ceil($total/$limit),'limit'=>$limit,'total'=>$total,'list'=>$list];
     }
 
     public function infoData($where,$field='*')
     {
         if(empty($where) || !is_array($where)){
-            return ['code'=>1001,'msg'=>'参数错误'];
+            return ['code'=>1001,'msg'=>lang('param_err')];
         }
         $info = $this->field($field)->where($where)->find();
 
         if(empty($info)){
-            return ['code'=>1002,'msg'=>'获取数据失败'];
+            return ['code'=>1002,'msg'=>lang('obtain_err')];
         }
         $info = $info->toArray();
-        return ['code'=>1,'msg'=>'获取成功','info'=>$info];
+        return ['code'=>1,'msg'=>lang('obtain_ok'),'info'=>$info];
     }
 
     public function saveData($data)
@@ -45,7 +45,7 @@ class Collect extends Base {
         $validate = \think\Loader::validate('Collect');
         if(!empty($data['collect_id'])){
             if(!$validate->scene('edit')->check($data)){
-                return ['code'=>1001,'msg'=>'参数错误：'.$validate->getError() ];
+                return ['code'=>1001,'msg'=>lang('param_err').'：'.$validate->getError() ];
             }
 
             $where=[];
@@ -54,29 +54,29 @@ class Collect extends Base {
         }
         else{
             if(!$validate->scene('edit')->check($data)){
-                return ['code'=>1002,'msg'=>'参数错误：'.$validate->getError() ];
+                return ['code'=>1002,'msg'=>lang('param_err').'：'.$validate->getError() ];
             }
             $res = $this->insert($data);
         }
         if(false === $res){
             return ['code'=>1003,'msg'=>''.$this->getError() ];
         }
-        return ['code'=>1,'msg'=>'保存成功'];
+        return ['code'=>1,'msg'=>lang('save_ok')];
     }
 
     public function delData($where)
     {
         $res = $this->where($where)->delete();
         if($res===false){
-            return ['code'=>1001,'msg'=>'删除失败'.$this->getError() ];
+            return ['code'=>1001,'msg'=>lang('del_err').'：'.$this->getError() ];
         }
-        return ['code'=>1,'msg'=>'删除成功'];
+        return ['code'=>1,'msg'=>lang('del_ok')];
     }
 
     public function check_flag($param)
     {
         if($param['cjflag'] != md5($param['cjurl'])){
-            return ['code'=>9001, 'msg'=>'flag标识错误，请勿非法请求'];
+            return ['code'=>9001, 'msg'=>lang('model/collect/flag_err')];
         }
         return ['code'=>1,'msg'=>'ok'];
     }
@@ -164,7 +164,7 @@ class Collect extends Base {
         $html = mac_curl_get($url);
 
         if(empty($html)){
-            return ['code'=>1001, 'msg'=>'连接API资源库失败，通常为服务器网络不稳定或禁用了采集'];
+            return ['code'=>1001, 'msg'=>lang('model/collect/get_html_err')];
         }
 
         $xml = @simplexml_load_string($html);
@@ -184,7 +184,7 @@ class Collect extends Base {
                 $xml = @simplexml_load_string($html);
             }
             if(empty($xml)) {
-                return ['code' => 1002, 'msg' => 'XML格式不正确，不支持采集'];
+                return ['code' => 1002, 'msg'=>lang('model/collect/xml_err')];
             }
         }
 
@@ -308,12 +308,12 @@ class Collect extends Base {
         $url .= http_build_query($url_param). base64_decode($param['param']);
         $html = mac_curl_get($url);
         if(empty($html)){
-            return ['code'=>1001, 'msg'=>'连接API资源库失败，通常为服务器网络不稳定或禁用了采集'];
+            return ['code'=>1001, 'msg'=>lang('model/collect/get_html_err')];
         }
 
         $json = json_decode($html,true);
         if(!$json){
-            return ['code'=>1002, 'msg'=>'JSON格式不正确，不支持采集'];
+            return ['code'=>1002, 'msg'=>lang('model/collect/json_err')];
         }
 
         $array_page = [];
@@ -379,13 +379,12 @@ class Collect extends Base {
         if($pic_status == 1){
             $img_url = model('Image')->down_load($pic_url, $GLOBALS['config']['upload'], $flag);
             $link = MAC_PATH . $img_url;
-            $link = str_replace('mac:', $GLOBALS['config']['upload']['protocol'].':', $img_url);
-
+            $link = str_replace('mac:', $GLOBALS['config']['upload']['protocol'].':', $link);
             if ($img_url == $pic_url) {
-                $des = '<a href="' . $link . '" target="_blank">' . $link . '</a><font color=red>下载失败!</font>';
+                $des = '<a href="' . $pic_url . '" target="_blank">' . $pic_url . '</a><font color=red>'.lang('download_err').'!</font>';
             } else {
                 $pic_url = $img_url;
-                $des = '<a href="' . $link . '" target="_blank">' . $link . '</a><font color=green>下载成功!</font>';
+                $des = '<a href="' . $link . '" target="_blank">' . $link . '</a><font color=green>'.lang('download_ok').'!</font>';
             }
         }
         return ['pic'=>$pic_url,'msg'=>$des];
@@ -394,7 +393,7 @@ class Collect extends Base {
     public function vod_data($param,$data,$show=1)
     {
         if($show==1) {
-            mac_echo('当前采集任务<strong class="green">' . $data['page']['page'] . '</strong>/<span class="green">' . $data['page']['pagecount'] . '</span>页 采集地址&nbsp;' . $data['page']['url'] . '');
+            mac_echo(lang('model/collect/data_tip1',[$data['page']['page'],$data['page']['pagecount'],$data['page']['url']]));
         }
 
         $config = config('maccms.collect');
@@ -415,22 +414,23 @@ class Collect extends Base {
             $tmp='';
 
             if($v['type_id'] ==0){
-                $des = '分类未绑定，跳过err';
+                $des = lang('model/collect/type_err');
             }
             elseif(empty($v['vod_name'])) {
-                $des = '数据不完整，跳过err';
+                $des = lang('model/collect/name_err');
             }
             elseif( mac_array_filter($filter_arr,$v['vod_name']) !==false) {
-                $des = '数据在过滤单中，跳过err';
+                $des = lang('model/collect/name_in_filter_err');
             }
             else {
                 unset($v['vod_id']);
 
                 foreach($v as $k2=>$v2){
-                    if(strpos($k2,'_content')===false) {
+                    if(strpos($k2,'_content')===false && $k2!=='vod_plot_detail') {
                         $v[$k2] = strip_tags($v2);
                     }
                 }
+
                 $v['vod_name'] = trim($v['vod_name']);
                 $v['type_id_1'] = intval($type_list[$v['type_id']]['type_pid']);
                 $v['vod_en'] = Pinyin::get($v['vod_name']);
@@ -649,7 +649,7 @@ class Collect extends Base {
                 if (!$info) {
 
                     if($param['opt'] == 2){
-                        $des= '数据操作没有勾选新增，跳过。';
+                        $des= lang('model/collect/not_check_add');
                     }
                     else {
                         if ($param['filter'] == 1 || $param['filter'] == 2) {
@@ -671,17 +671,17 @@ class Collect extends Base {
 
                         }
                         $color = 'green';
-                        $des = '新加入库，成功ok。';
+                        $des = lang('model/collect/add_ok');
                     }
                 } else {
                     if(empty($config['uprule'])){
-                        $des = '没有设置任何二次更新项目，跳过。';
+                        $des = lang('model/collect/uprule_empty');
                     }
                     elseif ($info['vod_lock'] == 1) {
-                        $des = '数据已经锁定，跳过。';
+                        $des = lang('model/collect/data_lock');
                     }
                     elseif($param['opt'] == 1){
-                        $des= '数据操作没有勾选更新，跳过。';
+                        $des= lang('model/collect/not_check_update');
                     }
                     else {
                         unset($v['vod_time_add']);
@@ -711,12 +711,12 @@ class Collect extends Base {
                                 $cj_play_server = $cj_play_server_arr[$k2];
                                 $cj_play_note = $cj_play_note_arr[$k2];
                                 if ($cj_play_url == $info['vod_play_url']) {
-                                    $des .= '播放地址相同，跳过。';
+                                    $des .= lang('model/collect/playurl_same');
                                 } elseif (empty($cj_play_from)) {
-                                    $des .= '播放器类型为空，跳过。';
-                                } elseif (strpos("," . $info['vod_play_from'], $cj_play_from) <= 0) {
+                                    $des .= lang('model/collect/playfrom_empty');
+                                } elseif (strpos('$$$'.$info['vod_play_from'].'$$$', '$$$'.$cj_play_from.'$$$') === false) {
                                     $color = 'green';
-                                    $des .= '播放组(' . $cj_play_from . ')，新增ok。';
+                                    $des .= lang('model/collect/playgroup_add_ok',[$cj_play_from]);
                                     if(!empty($old_play_from)){
                                         $old_play_url .="$$$";
                                         $old_play_from .= "$$$" ;
@@ -733,10 +733,10 @@ class Collect extends Base {
                                     $arr2 = explode("$$$", $old_play_from);
                                     $play_key = array_search($cj_play_from, $arr2);
                                     if ($arr1[$play_key] == $cj_play_url) {
-                                        $des .= '播放组(' . $cj_play_from . ')，无需更新。';
+                                        $des .= lang('model/collect/playgroup_same',[$cj_play_from]);;
                                     } else {
                                         $color = 'green';
-                                        $des .= '播放组(' . $cj_play_from . ')，更新ok。';
+                                        $des .= lang('model/collect/playgroup_update_ok',[$cj_play_from]);
                                         if ($config['urlrole'] == 1) {
                                             $tmp1 = explode('#',$arr1[$play_key]);
                                             $tmp2 = explode('#',$cj_play_url);
@@ -774,12 +774,12 @@ class Collect extends Base {
 
 
                                 if ($cj_down_url == $info['vod_down_url']) {
-                                    $des .= '下载地址相同，跳过。';
+                                    $des .= lang('model/collect/downurl_same');
                                 } elseif (empty($cj_down_from)) {
-                                    $des .= '下载器类型为空，跳过。';
-                                } elseif (strpos("," . $info['vod_down_from'], $cj_down_from)===false) {
+                                    $des .= lang('model/collect/downfrom_empty');
+                                } elseif (strpos('$$$'.$info['vod_down_from'].'$$$', '$$$'.$cj_down_from.'$$$')===false) {
                                     $color = 'green';
-                                    $des .= '下载组(' . $cj_down_from . ')，新增ok。';
+                                    $des .= lang('model/collect/downgroup_add_ok',[$cj_down_from]);
                                     if(!empty($old_down_from)){
                                         $old_down_url .="$$$";
                                         $old_down_from .= "$$$" ;
@@ -797,10 +797,10 @@ class Collect extends Base {
                                     $arr2 = explode("$$$", $old_down_from);
                                     $down_key = array_search($cj_down_from, $arr2);
                                     if ($arr1[$down_key] == $cj_down_url) {
-                                        $des .= '下载组(' . $cj_down_from . ')，无需更新。';
+                                        $des .= lang('model/collect/downgroup_same',[$cj_down_from]);
                                     } else {
                                         $color = 'green';
-                                        $des .= '下载组(' . $cj_down_from . ')，更新ok。';
+                                        $des .= lang('model/collect/downgroup_update_ok',[$cj_down_from]);
                                         $arr1[$down_key] = $cj_down_url;
                                         $ec=true;
                                     }
@@ -895,7 +895,7 @@ class Collect extends Base {
                             }
                         }
                         else{
-                            $des = '无需更新。';
+                            $des = lang('model/collect/not_need_update');
                         }
 
                     }
@@ -920,7 +920,7 @@ class Collect extends Base {
                 }
                 $this->vod_data($param,$res );
             }
-            mac_echo("数据采集完成");
+            mac_echo(lang('model/collect/is_over'));
             die;
         }
 
@@ -930,7 +930,7 @@ class Collect extends Base {
         if($show==1) {
             if ($param['ac'] == 'cjsel') {
                 Cache::rm($key);
-                mac_echo("数据采集完成");
+                mac_echo(lang('model/collect/is_over'));
                 unset($param['ids']);
                 $param['ac'] = 'list';
                 $url = url('api') . '?' . http_build_query($param);
@@ -943,7 +943,7 @@ class Collect extends Base {
             } else {
                 if ($data['page']['page'] >= $data['page']['pagecount']) {
                     Cache::rm($key);
-                    mac_echo("数据采集完成");
+                    mac_echo(lang('model/collect/is_over'));
                     unset($param['page'],$param['ids']);
                     $param['ac'] = 'list';
                     $url = url('api') . '?' . http_build_query($param);
@@ -982,12 +982,12 @@ class Collect extends Base {
         $url .= http_build_query($url_param). base64_decode($param['param']);
         $html = mac_curl_get($url);
         if(empty($html)){
-            return ['code'=>1001, 'msg'=>'连接API资源库失败，通常为服务器网络不稳定或禁用了采集'];
+            return ['code'=>1001, 'msg'=>lang('model/collect/get_html_err')];
         }
 
         $json = json_decode($html,true);
         if(!$json){
-            return ['code'=>1002, 'msg'=>'JSON格式不正确，不支持采集'];
+            return ['code'=>1002, 'msg'=>lang('model/collect/json_err')];
         }
 
         $array_page = [];
@@ -1031,7 +1031,7 @@ class Collect extends Base {
     public function art_data($param,$data,$show=1)
     {
         if($show==1) {
-            mac_echo('当前采集任务<strong class="green">' . $data['page']['page'] . '</strong>/<span class="green">' . $data['page']['pagecount'] . '</span>页 采集地址&nbsp;' . $data['page']['url'] . '');
+            mac_echo(lang('model/collect/data_tip1',[$data['page']['page'],$data['page']['pagecount'],$data['page']['url']]));
         }
 
         $config = config('maccms.collect');
@@ -1050,13 +1050,13 @@ class Collect extends Base {
             $tmp='';
 
             if($v['type_id'] ==0){
-                $des = '分类未绑定，跳过err';
+                $des = lang('model/collect/type_err');
             }
             elseif(empty($v['art_name'])) {
-                $des = '数据不完整，跳过err';
+                $des = lang('model/collect/name_err');
             }
             elseif( mac_array_filter($filter_arr,$v['art_name']) !==false) {
-                $des = '数据在过滤单中，跳过err';
+                $des = lang('model/collect/name_in_filter_err');
             }
             else {
                 unset($v['art_id']);
@@ -1156,16 +1156,16 @@ class Collect extends Base {
 
                     }
                     $color ='green';
-                    $des= '新加入库，成功。';
+                    $des= lang('model/collect/add_ok');
                 }
                 else {
 
 
                     if(empty($config['uprule'])){
-                        $des = '没有设置任何二次更新项目，跳过。';
+                        $des = lang('model/collect/uprule_empty');
                     }
                     elseif($info['art_lock'] == 1) {
-                        $des = '数据已经锁定，跳过。';
+                        $des = lang('model/collect/data_lock');
                     }
                     else {
                         unset($v['art_time_add']);
@@ -1217,7 +1217,7 @@ class Collect extends Base {
                                 }
                             }
                             else{
-                                $des = '无需更新。';
+                                $des = lang('model/collect/not_need_update');
                             }
                         }
 
@@ -1243,7 +1243,7 @@ class Collect extends Base {
                 }
                 $this->art_data($param,$res );
             }
-            mac_echo("数据采集完成");
+            mac_echo(lang('model/collect/is_over'));
             die;
         }
 
@@ -1254,7 +1254,7 @@ class Collect extends Base {
         if($show==1) {
             if ($param['ac'] == 'cjsel') {
                 Cache::rm($key);
-                mac_echo("数据采集完成");
+                mac_echo(lang('model/collect/is_over'));
                 unset($param['ids']);
                 $param['ac'] = 'list';
                 $url = url('api') . '?' . http_build_query($param);
@@ -1266,7 +1266,7 @@ class Collect extends Base {
             } else {
                 if ($data['page']['page'] >= $data['page']['pagecount']) {
                     Cache::rm($key);
-                    mac_echo("数据采集完成");
+                    mac_echo(lang('model/collect/is_over'));
                     unset($param['page']);
                     $param['ac'] = 'list';
                     $url = url('api') . '?' . http_build_query($param);
@@ -1304,12 +1304,12 @@ class Collect extends Base {
         $url .= http_build_query($url_param).base64_decode($param['param']);
         $html = mac_curl_get($url);
         if(empty($html)){
-            return ['code'=>1001, 'msg'=>'连接API资源库失败，通常为服务器网络不稳定或禁用了采集'];
+            return ['code'=>1001, 'msg'=>lang('model/collect/get_html_err')];
         }
 
         $json = json_decode($html,true);
         if(!$json){
-            return ['code'=>1002, 'msg'=>'JSON格式不正确，不支持采集'];
+            return ['code'=>1002, 'msg'=>lang('model/collect/json_err')];
         }
 
         $array_page = [];
@@ -1353,7 +1353,7 @@ class Collect extends Base {
     public function actor_data($param,$data,$show=1)
     {
         if($show==1) {
-            mac_echo('当前采集任务<strong class="green">' . $data['page']['page'] . '</strong>/<span class="green">' . $data['page']['pagecount'] . '</span>页 采集地址&nbsp;' . $data['page']['url'] . '');
+            mac_echo(lang('model/collect/data_tip1',[$data['page']['page'],$data['page']['pagecount'],$data['page']['url']]));
         }
 
         $config = config('maccms.collect');
@@ -1372,13 +1372,13 @@ class Collect extends Base {
             $tmp='';
 
             if($v['type_id'] ==0){
-                $des = '分类未绑定，跳过err';
+                $des = lang('model/collect/type_err');
             }
             elseif(empty($v['actor_name']) || empty($v['actor_sex'])) {
-                $des = '数据不完整actor_name,actor_sex必须，跳过err';
+                $des = lang('odel/collect/actor_data_require');
             }
             elseif( mac_array_filter($filter_arr,$v['actor_name'])!==false) {
-                $des = '数据在过滤单中，跳过err';
+                $des = lang('model/collect/name_in_filter_err');
             }
             else {
                 unset($v['actor_id']);
@@ -1460,14 +1460,14 @@ class Collect extends Base {
 
                     }
                     $color ='green';
-                    $des= '新加入库，成功。';
+                    $des= lang('model/collect/add_ok');
                 } else {
 
                     if(empty($config['uprule'])){
-                        $des = '没有设置任何二次更新项目，跳过。';
+                        $des = lang('model/collect/uprule_empty');
                     }
                     elseif ($info['actor_lock'] == 1) {
-                        $des = '数据已经锁定，跳过。';
+                        $des = lang('model/collect/data_lock');
                     }
                     else {
                         unset($v['actor_time_add']);
@@ -1504,7 +1504,7 @@ class Collect extends Base {
                                 }
                             }
                             else{
-                                $des = '无需更新。';
+                                $des = lang('model/collect/not_need_update');
                             }
                         }
 
@@ -1530,7 +1530,7 @@ class Collect extends Base {
                 }
                 $this->actor_data($param,$res );
             }
-            mac_echo("数据采集完成");
+            mac_echo(lang('model/collect/is_over'));
             die;
         }
 
@@ -1541,7 +1541,7 @@ class Collect extends Base {
         if($show==1) {
             if ($param['ac'] == 'cjsel') {
                 Cache::rm($key);
-                mac_echo("数据采集完成");
+                mac_echo(lang('model/collect/is_over'));
                 unset($param['ids']);
                 $param['ac'] = 'list';
                 $url = url('api') . '?' . http_build_query($param);
@@ -1553,7 +1553,7 @@ class Collect extends Base {
             } else {
                 if ($data['page']['page'] >= $data['page']['pagecount']) {
                     Cache::rm($key);
-                    mac_echo("数据采集完成");
+                    mac_echo(lang('model/collect/is_over'));
                     unset($param['page']);
                     $param['ac'] = 'list';
                     $url = url('api') . '?' . http_build_query($param);
@@ -1591,12 +1591,12 @@ class Collect extends Base {
         $url .= http_build_query($url_param).base64_decode($param['param']);
         $html = mac_curl_get($url);
         if(empty($html)){
-            return ['code'=>1001, 'msg'=>'连接API资源库失败，通常为服务器网络不稳定或禁用了采集'];
+            return ['code'=>1001, 'msg'=>lang('model/collect/get_html_err')];
         }
 
         $json = json_decode($html,true);
         if(!$json){
-            return ['code'=>1002, 'msg'=>'JSON格式不正确，不支持采集'];
+            return ['code'=>1002, 'msg'=>lang('model/collect/json_err')];
         }
 
         $array_page = [];
@@ -1620,7 +1620,7 @@ class Collect extends Base {
     public function role_data($param,$data,$show=1)
     {
         if($show==1) {
-            mac_echo('当前采集任务<strong class="green">' . $data['page']['page'] . '</strong>/<span class="green">' . $data['page']['pagecount'] . '</span>页 采集地址&nbsp;' . $data['page']['url'] . '');
+            mac_echo(lang('model/collect/data_tip1',[$data['page']['page'],$data['page']['pagecount'],$data['page']['url']]));
         }
 
         $config = config('maccms.collect');
@@ -1638,10 +1638,10 @@ class Collect extends Base {
             $tmp='';
 
             if(empty($v['role_name']) || empty($v['role_actor']) || empty($v['vod_name']) ) {
-                $des = 'role_name,role_actor,vod_name必须，跳过err';
+                $des = lang('model/collect/role_data_require');
             }
             elseif( mac_array_filter($filter_arr,$v['role_name']) !==false) {
-                $des = '数据在过滤单中，跳过err';
+                $des = lang('model/collect/name_in_filter_err');
             }
             else {
                 unset($v['role_id']);
@@ -1703,10 +1703,16 @@ class Collect extends Base {
                 $where['role_name'] = $v['role_name'];
                 $where['role_actor'] = $v['role_actor'];
 
-
                 $where2 = [];
-                $where2['vod_name'] = ['eq',$v['vod_name']];
                 $blend = false;
+
+                if(!empty($v['douban_id'])){
+                    $where2['vod_douban_id'] = ['eq',$v['douban_id']];
+                    unset($v['douban_id']);
+                }
+                else{
+                    $where2['vod_name'] = ['eq',$v['vod_name']];
+                }
 
                 if (strpos($config['inrule'], 'c')!==false) {
                     $where2['vod_actor'] = ['like', mac_like_arr($v['role_actor']), 'OR'];
@@ -1737,7 +1743,7 @@ class Collect extends Base {
                 }
 
                 if (!$vod_info) {
-                    $des = '未找到相关视频无法关联，跳过。';
+                    $des = lang('model/collect/not_found_rel_vod');
                 }
                 else {
                     $v['role_rid'] = $vod_info['vod_id'];
@@ -1752,14 +1758,14 @@ class Collect extends Base {
 
                         }
                         $color = 'green';
-                        $des = '新加入库，成功。';
+                        $des = lang('model/collect/add_ok');
                     } else {
 
                         if(empty($config['uprule'])){
-                            $des = '没有设置任何二次更新项目，跳过。';
+                            $des = lang('model/collect/uprule_empty');
                         }
                         elseif ($info['role_lock'] == 1) {
-                            $des = '数据已经锁定，跳过。';
+                            $des = lang('model/collect/data_lock');
                         }
                         else {
                             unset($v['role_time_add']);
@@ -1790,7 +1796,7 @@ class Collect extends Base {
                                     }
                                 }
                                 else{
-                                    $des = '无需更新。';
+                                    $des = lang('model/collect/not_need_update');
                                 }
                             }
 
@@ -1818,7 +1824,7 @@ class Collect extends Base {
                 }
                 $this->actor_data($param,$res );
             }
-            mac_echo("数据采集完成");
+            mac_echo(lang('model/collect/is_over'));
             die;
         }
 
@@ -1829,7 +1835,7 @@ class Collect extends Base {
         if($show==1) {
             if ($param['ac'] == 'cjsel') {
                 Cache::rm($key);
-                mac_echo("数据采集完成");
+                mac_echo(lang('model/collect/is_over'));
                 unset($param['ids']);
                 $param['ac'] = 'list';
                 $url = url('api') . '?' . http_build_query($param);
@@ -1841,7 +1847,7 @@ class Collect extends Base {
             } else {
                 if ($data['page']['page'] >= $data['page']['pagecount']) {
                     Cache::rm($key);
-                    mac_echo("数据采集完成");
+                    mac_echo(lang('model/collect/is_over'));
                     unset($param['page']);
                     $param['ac'] = 'list';
                     $url = url('api') . '?' . http_build_query($param);
@@ -1879,12 +1885,12 @@ class Collect extends Base {
         $url .= http_build_query($url_param).base64_decode($param['param']);
         $html = mac_curl_get($url);
         if(empty($html)){
-            return ['code'=>1001, 'msg'=>'连接API资源库失败，通常为服务器网络不稳定或禁用了采集'];
+            return ['code'=>1001, 'msg'=>lang('model/collect/get_html_err')];
         }
 
         $json = json_decode($html,true);
         if(!$json){
-            return ['code'=>1002, 'msg'=>'JSON格式不正确，不支持采集'];
+            return ['code'=>1002, 'msg'=>lang('model/collect/json_err')];
         }
 
         $array_page = [];
@@ -1928,7 +1934,7 @@ class Collect extends Base {
     public function website_data($param,$data,$show=1)
     {
         if($show==1) {
-            mac_echo('当前采集任务<strong class="green">' . $data['page']['page'] . '</strong>/<span class="green">' . $data['page']['pagecount'] . '</span>页 采集地址&nbsp;' . $data['page']['url'] . '');
+            mac_echo(lang('model/collect/data_tip1',[$data['page']['page'],$data['page']['pagecount'],$data['page']['url']]));
         }
 
         $config = config('maccms.collect');
@@ -1947,13 +1953,13 @@ class Collect extends Base {
             $tmp='';
 
             if($v['type_id'] ==0){
-                $des = '分类未绑定，跳过err';
+                $des = lang('model/collect/type_err');
             }
             elseif(empty($v['website_name'])) {
-                $des = '数据不完整website_name必须，跳过err';
+                $des = lang('model/collect/name_err');
             }
             elseif( mac_array_filter($filter_arr,$v['website_name'])!==false) {
-                $des = '数据在过滤单中，跳过err';
+                $des = lang('model/collect/name_in_filter_err');
             }
             else {
                 unset($v['website_id']);
@@ -2033,14 +2039,14 @@ class Collect extends Base {
 
                     }
                     $color ='green';
-                    $des= '新加入库，成功。';
+                    $des= lang('model/collect/add_ok');
                 } else {
 
                     if(empty($config['uprule'])){
-                        $des = '没有设置任何二次更新项目，跳过。';
+                        $des = lang('model/collect/uprule_empty');
                     }
                     elseif ($info['website_lock'] == 1) {
-                        $des = '数据已经锁定，跳过。';
+                        $des = lang('model/collect/data_lock');
                     }
                     else {
                         unset($v['website_time_add']);
@@ -2077,7 +2083,7 @@ class Collect extends Base {
                                 }
                             }
                             else{
-                                $des = '无需更新。';
+                                $des = lang('model/collect/not_need_update');
                             }
                         }
 
@@ -2103,7 +2109,7 @@ class Collect extends Base {
                 }
                 $this->website_data($param,$res );
             }
-            mac_echo("数据采集完成");
+            mac_echo(lang('model/collect/is_over'));
             die;
         }
 
@@ -2114,7 +2120,7 @@ class Collect extends Base {
         if($show==1) {
             if ($param['ac'] == 'cjsel') {
                 Cache::rm($key);
-                mac_echo("数据采集完成");
+                mac_echo(lang('model/collect/is_over'));
                 unset($param['ids']);
                 $param['ac'] = 'list';
                 $url = url('api') . '?' . http_build_query($param);
@@ -2126,7 +2132,271 @@ class Collect extends Base {
             } else {
                 if ($data['page']['page'] >= $data['page']['pagecount']) {
                     Cache::rm($key);
-                    mac_echo("数据采集完成");
+                    mac_echo(lang('model/collect/is_over'));
+                    unset($param['page']);
+                    $param['ac'] = 'list';
+                    $url = url('api') . '?' . http_build_query($param);
+                    mac_jump($url, $GLOBALS['config']['app']['collect_timespan']);
+                } else {
+                    $param['page'] = intval($data['page']['page']) + 1;
+                    $url = url('api') . '?' . http_build_query($param);
+                    mac_jump($url, $GLOBALS['config']['app']['collect_timespan']);
+                }
+            }
+        }
+    }
+
+    public function comment_json($param)
+    {
+        $url_param = [];
+        $url_param['ac'] = $param['ac'];
+        $url_param['t'] = $param['t'];
+        $url_param['pg'] = is_numeric($param['page']) ? $param['page'] : '';
+        $url_param['h'] = $param['h'];
+        $url_param['ids'] = $param['ids'];
+        $url_param['wd'] = $param['wd'];
+
+        if($param['ac']!='list'){
+            $url_param['ac'] = 'detail';
+        }
+
+        $url = $param['cjurl'];
+        if(strpos($url,'?')===false){
+            $url .='?';
+        }
+        else{
+            $url .='&';
+        }
+        $url .= http_build_query($url_param).base64_decode($param['param']);
+        $html = mac_curl_get($url);
+        if(empty($html)){
+            return ['code'=>1001, 'msg'=>lang('model/collect/get_html_err')];
+        }
+
+        $json = json_decode($html,true);
+        if(!$json){
+            return ['code'=>1002, 'msg'=>lang('model/collect/json_err')];
+        }
+
+        $array_page = [];
+        $array_page['page'] = $json['page'];
+        $array_page['pagecount'] = $json['pagecount'];
+        $array_page['pagesize'] = $json['limit'];
+        $array_page['recordcount'] = $json['total'];
+        $array_page['url'] = $url;
+
+        $key = 0;
+        $array_data = [];
+        foreach($json['list'] as $key=>$v){
+            $array_data[$key] = $v;
+        }
+
+
+        $res = ['code'=>1, 'msg'=>'ok', 'page'=>$array_page, 'data'=>$array_data ];
+        return $res;
+    }
+
+    public function comment_data($param,$data,$show=1)
+    {
+        if($show==1) {
+            mac_echo(lang('model/collect/data_tip1',[$data['page']['page'],$data['page']['pagecount'],$data['page']['url']]));
+        }
+
+        $config = config('maccms.collect');
+        $config = $config['comment'];
+
+        $filter_arr = explode(',',$config['filter']); $filter_arr = array_filter($filter_arr);
+        $pse_rnd = explode('#',$config['words']); $pse_rnd = array_filter($pse_rnd);
+        $pse_syn = mac_txt_explain($config['thesaurus']);
+
+        foreach($data['data'] as $k=>$v){
+
+            $color='red';
+            $des='';
+            $msg='';
+            $tmp='';
+
+            if(empty($v['comment_name']) || empty($v['comment_content']) || empty($v['rel_name']) ) {
+                $des = lang('model/collect/comment_data_require');
+            }
+            elseif( mac_array_filter($filter_arr,$v['comment_content']) !==false) {
+                $des = lang('model/collect/name_in_filter_err');
+            }
+            else {
+                unset($v['comment_id']);
+
+                foreach($v as $k2=>$v2){
+                    if(strpos($k2,'_content')===false) {
+                        $v[$k2] = strip_tags($v2);
+                    }
+                }
+
+                $v['comment_time'] = time();
+                $v['comment_status'] = intval($config['status']);
+                $v['comment_up'] = intval($v['comment_up']);
+                $v['comment_down'] = intval($v['comment_down']);
+                $v['comment_mid'] = intval($v['comment_mid']);
+                if(!empty($v['comment_ip']) && !is_numeric($v['comment_ip'])){
+                    $v['comment_ip'] = ip2long($v['comment_ip']);
+                }
+
+                if($config['updown_start']>0 && $config['updown_end']){
+                    $v['comment_up'] = rand($config['updown_start'], $config['updown_end']);
+                    $v['comment_down'] = rand($config['updown_start'], $config['updown_end']);
+                }
+                if ($config['psernd'] == 1) {
+                    $v['comment_content'] = mac_rep_pse_rnd($pse_rnd, $v['comment_content']);
+                }
+                if ($config['psesyn'] == 1) {
+                    $v['comment_content'] = mac_rep_pse_syn($pse_syn, $v['comment_content']);
+                }
+
+                $where = [];
+                $where2 = [];
+                $blend = false;
+
+                if (strpos($config['inrule'], 'b')!==false) {
+                    $where['comment_content'] = ['eq', $v['comment_content']];
+                }
+                if (strpos($config['inrule'], 'c')!==false) {
+                    $where['comment_name'] = ['eq', $v['comment_name']];
+                }
+
+                if(empty($v['rel_id'])){
+                    if($v['comment_mid']==1){
+                        if(!empty($v['douban_id'])){
+                            $where2['vod_douban_id'] = ['eq',$v['douban_id']];
+                            unset($v['douban_id']);
+                        }
+                        else{
+                            $where2['vod_name'] = ['eq',$v['rel_name']];
+                        }
+                        $rel_info = model('Vod')->where($where2)->find();
+                    }
+                    elseif($v['comment_mid']==2){
+                        $where2['art_name'] = ['eq',$v['rel_name']];
+                        $rel_info = model('Art')->where($where2)->find();
+                    }
+                    elseif($v['comment_mid']==3){
+                        $where2['topic_name'] = ['eq',$v['rel_name']];
+                        $rel_info = model('Topic')->where($where2)->find();
+                    }
+                    elseif($v['comment_mid']==8){
+                        $where2['actor_name'] = ['eq',$v['rel_name']];
+                        $rel_info = model('Actor')->where($where2)->find();
+                    }
+                    elseif($v['comment_mid']==9){
+                        $where2['role_name'] = ['eq',$v['rel_name']];
+                        $rel_info = model('Role')->where($where2)->find();
+                    }
+                    elseif($v['comment_mid']==11){
+                        $where2['website_name'] = ['eq',$v['rel_name']];
+                        $rel_info = model('Website')->where($where2)->find();
+                    }
+
+                    $rel_id = $rel_info[mac_get_mid_code($v['comment_mid']).'_id'];
+                }
+                else{
+                    $rel_id = $v['rel_id'];
+                }
+
+                if(empty($rel_id)){
+                    $des = lang('model/collect/not_found_rel_data');
+                }
+                else {
+
+                    $v['comment_rid'] = $rel_id;
+                    $info=false;
+
+                    if(!empty($where)) {
+                        $where['comment_rid'] = $rel_id;
+                        $info = model('Comment')->where($where)->find();
+                    }
+                    if (!$info) {
+                        $msg = $tmp['msg'];
+                        $res = model('Comment')->insert($v);
+                        if ($res === false) {
+
+                        }
+                        $color = 'green';
+                        $des = lang('model/collect/add_ok');
+                    } else {
+
+                        if(empty($config['uprule'])){
+                            $des = lang('model/collect/uprule_empty');
+                        }
+                        else {
+                            $rc = true;
+                            if ($rc) {
+                                $update = [];
+
+                                if (strpos(',' . $config['uprule'], 'a') !== false && !empty($v['comment_time']) && $v['comment_time'] != $info['comment_time']) {
+                                    $update['comment_time'] = $v['comment_time'];
+                                }
+
+                                if(count($update)>0){
+                                    $update['comment_time'] = time();
+                                    $where = [];
+                                    $where['comment_id'] = $info['comment_id'];
+                                    $res = model('Comment')->where($where)->update($update);
+                                    $color = 'green';
+                                    if ($res === false) {
+
+                                    }
+                                }
+                                else{
+                                    $des = lang('model/collect/not_need_update');
+                                }
+                            }
+
+                        }
+                    }
+                }
+
+            }
+            if($show==1) {
+                mac_echo( ($k + 1) . $v['comment_content'] . "<font color=$color>" .$des .'</font>'. $msg . '');
+            }
+            else{
+                return ['code'=>($color=='red' ? 1001 : 1),'msg'=> $v['comment_content'] .' '.$des ];
+            }
+        }
+
+        $key = $GLOBALS['config']['app']['cache_flag']. '_'.'collect_break_comment';
+        if(ENTRANCE=='api'){
+            Cache::rm($key);
+            if ($data['page']['page'] < $data['page']['pagecount']) {
+                $param['page'] = intval($data['page']['page']) + 1;
+                $res = $this->role($param);
+                if($res['code']>1){
+                    return $this->error($res['msg']);
+                }
+                $this->actor_data($param,$res );
+            }
+            mac_echo(lang('model/collect/is_over'));
+            die;
+        }
+
+        if(empty($GLOBALS['config']['app']['collect_timespan'])){
+            $GLOBALS['config']['app']['collect_timespan'] = 3;
+        }
+
+        if($show==1) {
+            if ($param['ac'] == 'cjsel') {
+                Cache::rm($key);
+                mac_echo(lang('model/collect/is_over'));
+                unset($param['ids']);
+                $param['ac'] = 'list';
+                $url = url('api') . '?' . http_build_query($param);
+                $ref = $_SERVER["HTTP_REFERER"];
+                if(!empty($ref)){
+                    $url = $ref;
+                }
+                mac_jump($url, $GLOBALS['config']['app']['collect_timespan']);
+            } else {
+                if ($data['page']['page'] >= $data['page']['pagecount']) {
+                    Cache::rm($key);
+                    mac_echo(lang('model/collect/is_over'));
                     unset($param['page']);
                     $param['ac'] = 'list';
                     $url = url('api') . '?' . http_build_query($param);

@@ -57,8 +57,8 @@ class All extends Controller
     {
         $maccms = $GLOBALS['config']['site'];
         $maccms['path'] = MAC_PATH;
-        $maccms['path_tpl'] = MAC_PATH_TEMPLATE;
-        $maccms['path_ads'] = MAC_PATH_ADS;
+        $maccms['path_tpl'] = $GLOBALS['MAC_PATH_TEMPLATE'];
+        $maccms['path_ads'] = $GLOBALS['MAC_PATH_ADS'];
         $maccms['user_status'] = $GLOBALS['config']['user']['status'];
         $maccms['date'] = date('Y-m-d');
 
@@ -93,14 +93,21 @@ class All extends Controller
         $this->assign( ['maccms'=>$maccms] );
     }
 
-    protected function page_error($msg='发生错误')
+    protected function page_error($msg='')
     {
+        if(empty($msg)){
+            $msg=lang('controller/an_error_occurred');
+        }
         $url = Request::instance()->isAjax() ? '' : 'javascript:history.back(-1);';
         $wait = 3;
         $this->assign('url',$url);
         $this->assign('wait',$wait);
         $this->assign('msg',$msg);
-        $html = $this->label_fetch('public/jump');
+        $tpl = 'jump';
+        if(!empty($GLOBALS['config']['app']['page_404'])){
+            $tpl = $GLOBALS['config']['app']['page_404'];
+        }
+        $html = $this->label_fetch('public/'.$tpl);
         header("HTTP/1.1 404 Not Found");
         header("Status: 404 Not Found");
         exit($html);
@@ -115,7 +122,7 @@ class All extends Controller
         $user_name = cookie('user_name');
         $user_check = cookie('user_check');
 
-        $user = ['user_id'=>0,'user_name'=>'游客','user_portrait'=>'static/images/touxiang.png','group_id'=>1,'points'=>0];
+        $user = ['user_id'=>0,'user_name'=>lang('controller/visitor'),'user_portrait'=>'static/images/touxiang.png','group_id'=>1,'points'=>0];
         $group_list = model('Group')->getCache();
 
         if(!empty($user_id) && !empty($user_name) && !empty($user_check)){
@@ -125,7 +132,7 @@ class All extends Controller
             }
             else{
                 cookie('user_id','0');
-                cookie('user_name','游客');
+                cookie('user_name',lang('controller/visitor'));
                 cookie('user_check','');
                 $user['group'] = $group_list[1];
             }
@@ -151,7 +158,7 @@ class All extends Controller
 
         $this->assign('obj',$info);
         if(empty($info)){
-            return $this->error('获取分类失败，请选择其它分类！');
+            return $this->error(lang('controller/get_type_err'));
         }
         if($view<2) {
             $res = $this->check_user_popedom($info['type_id'], 1);
@@ -517,8 +524,8 @@ class All extends Controller
             $this->assign('player_js','<div class="MacPlayer" style="z-index:99999;width:100%;height:100%;margin:0px;padding:0px;"><iframe id="player_if" name="player_if" src="'.$dy_play.'" style="z-index:9;width:100%;height:100%;" border="0" marginWidth="0" frameSpacing="0" marginHeight="0" frameBorder="0" scrolling="no" allowfullscreen="allowfullscreen" mozallowfullscreen="mozallowfullscreen" msallowfullscreen="msallowfullscreen" oallowfullscreen="oallowfullscreen" webkitallowfullscreen="webkitallowfullscreen" ></iframe></div>');
         }
         else {
-            $this->assign('player_data', '<script type="text/javascript">var player_x10d26=' . json_encode($player_info) . '</script>');
-            $this->assign('player_js', '<script type="text/javascript" src="' . MAC_PATH . 'static/js/playerconfig.js?t='.$this->_tsp.'"></script><script type="text/javascript" src="' . MAC_PATH . 'static/js/player.js?t='.$this->_tsp.'"></script>');
+            $this->assign('player_data', '<script type="text/javascript">var player_aaaa=' . json_encode($player_info) . '</script>');
+            $this->assign('player_js', '<script type="text/javascript" src="' . MAC_PATH . 'static/js/playerconfig.js?t='.$this->_tsp.'"></script><script type="text/javascript" src="' . MAC_PATH . 'static/js/player.js?t=a'.$this->_tsp.'"></script>');
         }
         $this->label_comment();
         return $info;

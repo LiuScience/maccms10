@@ -16,8 +16,7 @@ class Base extends All
         parent::__construct();
 
         //判断用户登录状态
-
-        if(in_array($this->_cl,['Index']) && in_array($this->_ac,['login','logout'])) {
+        if(in_array($this->_cl,['Index']) && in_array($this->_ac,['login'])) {
 
         }
         elseif(ENTRANCE=='api' && in_array($this->_cl,['Timming']) && in_array($this->_ac,['index'])){
@@ -33,7 +32,7 @@ class Base extends All
             $this->_makesize = $GLOBALS['config']['app']['makesize'];
 
             if($this->_cl!='Update' && !$this->check_auth($this->_cl,$this->_ac)){
-                return $this->error('您没有权限访问此页面');
+                return $this->error(lang('permission_denied'));
             }
         }
         $this->assign('cl',$this->_cl);
